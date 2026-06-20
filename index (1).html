@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malan Makanan — Operations</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#16181c;
+  --panel:#1d2025;
+  --panel-2:#23262c;
+  --border:#2e323a;
+  --text:#e7e6e2;
+  --text-dim:#9a9da5;
+  --text-faint:#6b6e76;
+  --accent:#d68a3c;
+  --accent-dim:#8a5a28;
+  --accent-soft:#3a2e1f;
+  --good:#5a9c6e;
+  --warn:#d6a93c;
+  --bad:#c4593f;
+  --radius:6px;
+  --font-display:'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  font-size:13.5px;
+  line-height:1.45;
+  height:100vh;
+  overflow:hidden;
+}
+#app{display:flex;height:100vh;}
+
+/* SIDEBAR */
+#sidebar{
+  width:218px;
+  flex-shrink:0;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  padding:16px 0;
+}
+.brand{
+  padding:0 16px 16px 16px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+.brand-mark{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:var(--accent);
+  text-transform:uppercase;
+}
+.brand-name{
+  font-size:16px;
+  font-weight:700;
+  margin-top:2px;
+}
+.brand-sub{
+  font-size:11px;
+  color:var(--text-faint);
+  margin-top:1px;
+}
+.nav-section{
+  margin-top:10px;
+}
+.nav-label{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  padding:6px 16px 4px 16px;
+}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 16px;
+  color:var(--text-dim);
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  border-left:2px solid transparent;
+  transition:background .12s, color .12s;
+}
+.nav-item:hover{background:var(--panel-2);color:var(--text);}
+.nav-item.active{
+  background:var(--panel-2);
+  color:var(--text);
+  border-left:2px solid var(--accent);
+}
+.nav-icon{width:15px;text-align:center;opacity:0.85;font-size:13px;}
+.nav-badge{
+  margin-left:auto;
+  background:var(--bad);
+  color:#fff;
+  font-size:10px;
+  font-weight:600;
+  padding:1px 6px;
+  border-radius:10px;
+  font-family:var(--font-mono);
+}
+.sidebar-footer{
+  margin-top:auto;
+  padding:12px 16px 0 16px;
+  border-top:1px solid var(--border);
+}
+.role-select{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-size:12px;
+  padding:6px 8px;
+  border-radius:var(--radius);
+  font-family:var(--font-display);
+}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#topbar{
+  height:54px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 24px;
+  flex-shrink:0;
+}
+#topbar h1{font-size:15px;font-weight:600;}
+#topbar .meta{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);}
+#content{flex:1;overflow-y:auto;padding:24px;}
+
+/* KPI CARDS */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:12px;
+  margin-bottom:22px;
+}
+.kpi-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+}
+.kpi-label{
+  font-size:11px;
+  color:var(--text-faint);
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  font-family:var(--font-mono);
+}
+.kpi-value{
+  font-size:22px;
+  font-weight:700;
+  margin-top:6px;
+  font-family:var(--font-mono);
+}
+.kpi-delta{font-size:11px;margin-top:4px;}
+.kpi-delta.up{color:var(--good);}
+.kpi-delta.down{color:var(--bad);}
+.kpi-card.alert .kpi-value{color:var(--warn);}
+.kpi-card.danger .kpi-value{color:var(--bad);}
+
+/* PANELS */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:18px;
+  overflow:hidden;
+}
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+}
+.panel-head h2{font-size:13px;font-weight:600;}
+.panel-head .sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.panel-body{padding:16px;}
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;}
+
+/* BUTTONS */
+.btn{
+  background:var(--accent);
+  color:#1a1611;
+  border:none;
+  padding:7px 14px;
+  border-radius:var(--radius);
+  font-size:12.5px;
+  font-weight:600;
+  cursor:pointer;
+  font-family:var(--font-display);
+}
+.btn:hover{background:#e29b4f;}
+.btn.secondary{
+  background:transparent;
+  color:var(--text-dim);
+  border:1px solid var(--border);
+}
+.btn.secondary:hover{color:var(--text);border-color:var(--text-faint);}
+.btn.small{padding:4px 9px;font-size:11.5px;}
+.btn.danger{background:var(--bad);color:#fff;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{
+  text-align:left;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--text-faint);
+  font-family:var(--font-mono);
+  font-weight:500;
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+}
+tbody td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--border);
+  color:var(--text);
+}
+tbody tr:hover{background:var(--panel-2);}
+tbody tr:last-child td{border-bottom:none;}
+td.num, th.num{text-align:right;font-family:var(--font-mono);}
+
+.pill{
+  display:inline-block;
+  font-size:10.5px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:10px;
+  font-family:var(--font-mono);
+}
+.pill.good{background:rgba(90,156,110,0.15);color:var(--good);}
+.pill.warn{background:rgba(214,169,60,0.15);color:var(--warn);}
+.pill.bad{background:rgba(196,89,63,0.15);color:var(--bad);}
+.pill.neutral{background:var(--panel-2);color:var(--text-dim);}
+
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar input, .toolbar select{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:var(--radius);
+  font-size:12.5px;
+  font-family:var(--font-display);
+}
+.toolbar input::placeholder{color:var(--text-faint);}
+.spacer{flex:1;}
+
+.empty-state{
+  text-align:center;
+  padding:40px 20px;
+  color:var(--text-faint);
+  font-size:12.5px;
+}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  display:none;align-items:center;justify-content:center;z-index:50;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  width:460px;
+  max-height:80vh;
+  overflow-y:auto;
+}
+.modal-head{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-head h3{font-size:14px;font-weight:600;}
+.modal-close{cursor:pointer;color:var(--text-faint);font-size:16px;}
+.modal-body{padding:18px;}
+.form-row{margin-bottom:12px;}
+.form-row label{
+  display:block;font-size:11px;color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:0.04em;margin-bottom:5px;
+  font-family:var(--font-mono);
+}
+.form-row input, .form-row select, .form-row textarea{
+  width:100%;background:var(--panel-2);border:1px solid var(--border);
+  color:var(--text);padding:8px 10px;border-radius:var(--radius);font-size:13px;
+  font-family:var(--font-display);
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.warn-banner{
+  background:rgba(214,169,60,0.1);
+  border:1px solid rgba(214,169,60,0.3);
+  color:var(--warn);
+  padding:8px 12px;
+  border-radius:var(--radius);
+  font-size:12px;
+  margin-bottom:12px;
+}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);font-family:var(--font-mono);margin:16px 0 8px 0;}
+.section-title:first-child{margin-top:0;}
+.chart-wrap{position:relative;height:230px;}
+.muted{color:var(--text-faint);}
+.access-denied{padding:60px 20px;text-align:center;color:var(--text-faint);}
+.access-denied h2{color:var(--text);font-size:16px;margin-bottom:8px;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:#33373f;border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">ERP / Internal</div>
+      <div class="brand-name">Malan Makanan</div>
+      <div class="brand-sub">Dessert Mfg &amp; Distribution</div>
+    </div>
+    <div class="nav-section" id="navContainer"></div>
+    <div class="sidebar-footer">
+      <select class="role-select" id="roleSelect" onchange="setRole(this.value)">
+        <option value="owner">Business Owner</option>
+        <option value="production">Production Staff</option>
+        <option value="inventory">Inventory Manager</option>
+        <option value="distribution">Distribution Staff</option>
+        <option value="finance">Finance Staff</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="meta" id="topMeta"></div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<script>
+/* ============================================================
+   MALAN MAKANAN ERP — FRONTEND
+   In-memory mock data layer. Replace functions in DATA.api with
+   google.script.run calls (or fetch() to your deployed Web App
+   URL) when wiring up the real Apps Script backend. Every view
+   reads exclusively through DATA.api.* so the swap stays contained.
+   ============================================================ */
+
+const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-LK', {maximumFractionDigits:0});
+const fmtDate = d => new Date(d).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+const todayISO = () => new Date().toISOString().slice(0,10);
+const daysFromNow = n => { const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const uid = (p) => p + '-' + Math.random().toString(36).slice(2,8);
+
+/* ---------------- DATA STORE ---------------- */
+// Starts empty. Loaded from localStorage if a previous session exists on this
+// browser/device, otherwise blank. Use Settings > Export to back up to a file,
+// and Settings > Import to restore on another device or after switching backends.
+const STORAGE_KEY = 'malan_makanan_erp_data_v1';
+
+let DB = {
+  products: [],
+  ingredients: [],
+  inventory_transactions: [],
+  recipes: [],
+  production_batches: [],
+  shops: [],
+  distribution: [],
+  consignment_tracking: [],
+  payments: [],
+  expenses: [],
+  returns: [],
+};
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ DB = JSON.parse(raw); }
+  }catch(e){ console.warn('Could not load saved data, starting blank.', e); }
+}
+function saveToStorage(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+  catch(e){ console.warn('Could not save data', e); }
+}
+loadFromStorage();
+
+/* ---------------- DATA API LAYER (swap point for backend) ---------------- */
+// NOTE for future backend swap: every method below reads/writes the local DB
+// object and then calls saveToStorage(). To connect Google Sheets (or any
+// other backend), replace the body of each method with the matching
+// google.script.run / fetch() call instead — the rest of the app (every
+// view/render function) only ever talks to DATA.api, so nothing else changes.
+const DATA = {
+  api: {
+    getProducts: () => DB.products,
+    getIngredients: () => DB.ingredients.map(i => ({...i, current_stock: computeStock(i.id)})),
+    getRecipes: (productId) => DB.recipes.filter(r=>!productId || r.product_id===productId),
+    getBatches: () => DB.production_batches,
+    getShops: () => DB.shops,
+    getDistribution: () => DB.distribution,
+    getConsignment: () => DB.consignment_tracking,
+    getPayments: () => DB.payments,
+    getExpenses: () => DB.expenses,
+    getReturns: () => DB.returns,
+    getTransactions: () => DB.inventory_transactions,
+
+    createProduct: (p) => { p.id = uid('P'); DB.products.push(p); return p; },
+    createIngredient: (i) => { i.id = uid('I'); i.status='ok'; DB.ingredients.push(i); return i; },
+    createShop: (s) => { s.id = uid('S'); DB.shops.push(s); return s; },
+    createExpense: (e) => { e.id = uid('EXP'); DB.expenses.push(e); return e; },
+    createPayment: (p) => { p.id = uid('PAY'); DB.payments.push(p); return p; },
+
+    createProductionBatch: (batch) => {
+      const recipe = DB.recipes.filter(r=>r.product_id===batch.product_id);
+      const multiplier = batch.qty_produced/100; // recipes defined per 100-unit batch
+      let shortfalls = [];
+      recipe.forEach(r=>{
+        const need = r.qty_per_batch * multiplier;
+        const have = computeStock(r.ingredient_id);
+        if(have < need) shortfalls.push({ingredient_id:r.ingredient_id, need, have});
+      });
+      if(shortfalls.length && !batch.override){
+        return {ok:false, shortfalls};
+      }
+      batch.id = uid('B');
+      batch.stock_override = shortfalls.length>0;
+      const product = DB.products.find(p=>p.id===batch.product_id);
+      batch.expiry_date = daysFromNow(product.shelf_life_days);
+      let ingredientCost = 0;
+      recipe.forEach(r=>{
+        const qty = r.qty_per_batch*multiplier;
+        const ing = DB.ingredients.find(i=>i.id===r.ingredient_id);
+        ingredientCost += qty*ing.avg_cost;
+        DB.inventory_transactions.push({id:uid('TX'), date:batch.date, type:'consumption', ingredient_id:r.ingredient_id, qty, unit_cost:ing.avg_cost, ref:batch.id});
+      });
+      batch.ingredient_cost = ingredientCost;
+      batch.total_cost = ingredientCost + Number(batch.packaging_cost||0) + Number(batch.gas_cost||0) + Number(batch.labor_cost||0);
+      batch.unit_cost = batch.total_cost/batch.qty_produced;
+      DB.production_batches.push(batch);
+      return {ok:true, batch, shortfalls};
+    },
+
+    createDistribution: (dist) => {
+      dist.id = uid('DIST');
+      const product = DB.products.find(p=>p.id===dist.product_id);
+      dist.unit_price = product.wholesale_price;
+      dist.total_value = dist.unit_price*dist.qty;
+      DB.distribution.push(dist);
+      if(dist.type==='consignment'){
+        DB.consignment_tracking.push({id:uid('CONS'), dist_id:dist.id, shop_id:dist.shop_id, product_id:dist.product_id, batch_id:dist.batch_id, delivered_qty:dist.qty, sold_qty:0, returned_qty:0, expired_qty:0});
+      }
+      return dist;
+    },
+
+    updateConsignment: (consId, fields) => {
+      const c = DB.consignment_tracking.find(x=>x.id===consId);
+      Object.assign(c, fields);
+      return c;
+    },
+
+    createReturn: (r) => { r.id = uid('RET'); DB.returns.push(r); return r; },
+  }
+};
+
+function computeStock(ingredientId){
+  return DB.inventory_transactions
+    .filter(t=>t.ingredient_id===ingredientId)
+    .reduce((sum,t)=>{
+      if(t.type==='purchase' || t.type==='adjustment_in') return sum+Number(t.qty);
+      if(t.type==='consumption' || t.type==='waste' || t.type==='adjustment_out') return sum-Number(t.qty);
+      return sum;
+    },0);
+}
+
+function shopBalance(shopId){
+  const delivered = DB.distribution.filter(d=>d.shop_id===shopId).reduce((s,d)=>s+d.total_value,0);
+  const returnsImpact = DB.returns.filter(r=>r.shop_id===shopId).reduce((s,r)=>s+Number(r.cost_impact||0),0);
+  const paid = DB.payments.filter(p=>p.shop_id===shopId && p.type!=='advance').reduce((s,p)=>s+Number(p.amount),0);
+  return delivered - returnsImpact - paid;
+}
+
+/* ---------------- ROLES & PERMISSIONS ---------------- */
+const ROLES = {
+  owner:        {label:'Business Owner', modules:['dashboard','products','ingredients','recipes','inventory','production','distribution','shops','consignment','payments','expenses','returns','reports','settings']},
+  production:   {label:'Production Staff', modules:['dashboard','production','recipes','products']},
+  inventory:    {label:'Inventory Manager', modules:['dashboard','ingredients','inventory','recipes','returns']},
+  distribution: {label:'Distribution Staff', modules:['dashboard','distribution','shops','consignment','payments']},
+  finance:      {label:'Finance Staff', modules:['dashboard','payments','expenses','reports']},
+};
+let currentRole = 'owner';
+
+const NAV = [
+  {section:'Overview', items:[
+    {id:'dashboard', label:'Dashboard', icon:'◆'},
+  ]},
+  {section:'Catalog', items:[
+    {id:'products', label:'Products', icon:'▢'},
+    {id:'ingredients', label:'Ingredients', icon:'▤'},
+    {id:'recipes', label:'Recipes (BOM)', icon:'▦'},
+  ]},
+  {section:'Operations', items:[
+    {id:'inventory', label:'Inventory Ledger', icon:'▥'},
+    {id:'production', label:'Production', icon:'▣'},
+  ]},
+  {section:'Distribution', items:[
+    {id:'distribution', label:'Distribution', icon:'▶'},
+    {id:'shops', label:'Shops', icon:'⌂'},
+    {id:'consignment', label:'Consignment', icon:'◫'},
+  ]},
+  {section:'Finance', items:[
+    {id:'payments', label:'Payments', icon:'৳'},
+    {id:'expenses', label:'Expenses', icon:'−'},
+    {id:'returns', label:'Returns', icon:'↺'},
+  ]},
+  {section:'Insights', items:[
+    {id:'reports', label:'Reports', icon:'▤'},
+    {id:'settings', label:'Settings', icon:'⚙'},
+  ]},
+];
+
+let currentView = 'dashboard';
+
+function setRole(role){
+  currentRole = role;
+  if(!ROLES[currentRole].modules.includes(currentView)) currentView = 'dashboard';
+  renderNav();
+  renderView();
+}
+
+function renderNav(){
+  const allowed = ROLES[currentRole].modules;
+  const container = document.getElementById('navContainer');
+  container.innerHTML = NAV.map(sec=>{
+    const items = sec.items.filter(it=>allowed.includes(it.id));
+    if(!items.length) return '';
+    return `<div class="nav-section">
+      <div class="nav-label">${sec.section}</div>
+      ${items.map(it=>`<div class="nav-item ${it.id===currentView?'active':''}" onclick="goTo('${it.id}')">
+        <span class="nav-icon">${it.icon}</span>${it.label}
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function goTo(view){
+  currentView = view;
+  renderNav();
+  renderView();
+}
+
+function renderView(){
+  saveToStorage(); // autosave on every navigation/mutation cycle
+  const titles = {dashboard:'Dashboard', products:'Products', ingredients:'Ingredients', recipes:'Recipes (Bill of Materials)', inventory:'Inventory Ledger', production:'Production', distribution:'Distribution', shops:'Shops', consignment:'Consignment Tracking', payments:'Payments', expenses:'Expenses', returns:'Returns', reports:'Reports', settings:'Settings'};
+  document.getElementById('pageTitle').textContent = titles[currentView] || '';
+  document.getElementById('topMeta').textContent = ROLES[currentRole].label + ' · ' + fmtDate(new Date());
+  const content = document.getElementById('content');
+
+  if(!ROLES[currentRole].modules.includes(currentView)){
+    content.innerHTML = `<div class="access-denied"><h2>No access</h2><p>${ROLES[currentRole].label} does not have permission to view this module.</p></div>`;
+    return;
+  }
+  const renderers = {
+    dashboard: renderDashboard, products: renderProducts, ingredients: renderIngredients,
+    recipes: renderRecipes, inventory: renderInventory, production: renderProduction,
+    distribution: renderDistribution, shops: renderShops, consignment: renderConsignment,
+    payments: renderPayments, expenses: renderExpenses, returns: renderReturns,
+    reports: renderReports, settings: renderSettings,
+  };
+  content.innerHTML = '';
+  renderers[currentView]();
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function renderDashboard(){
+  const dist = DATA.api.getDistribution();
+  const exp = DATA.api.getExpenses();
+  const ing = DATA.api.getIngredients();
+  const batches = DATA.api.getBatches();
+  const cons = DATA.api.getConsignment();
+  const shops = DATA.api.getShops();
+
+  const thisMonthRevenue = dist.reduce((s,d)=>s+d.total_value,0);
+  const totalExpenses = exp.reduce((s,e)=>s+Number(e.amount),0);
+  const cogs = batches.reduce((s,b)=>s+Number(b.total_cost||0),0);
+  const profit = thisMonthRevenue - totalExpenses - 0; // cogs already embedded in batch cost, kept separate for clarity
+  const cashPosition = DATA.api.getPayments().reduce((s,p)=>s+Number(p.amount),0) - totalExpenses;
+  const outstanding = shops.reduce((s,sh)=>s+Math.max(shopBalance(sh.id),0),0);
+  const invValue = ing.reduce((s,i)=>s+i.current_stock*i.avg_cost,0);
+  const lowStock = ing.filter(i=>i.current_stock < i.min_stock).length;
+  const expiringSoon = batches.filter(b=> (new Date(b.expiry_date)-new Date())/86400000 <= 7).length;
+  const prodVolume = batches.reduce((s,b)=>s+Number(b.qty_produced),0);
+  const returnsCount = DATA.api.getReturns().length;
+
+  const kpis = [
+    {label:'Revenue (period)', value:fmt(thisMonthRevenue)},
+    {label:'Profit (est.)', value:fmt(profit)},
+    {label:'Cash Position', value:fmt(cashPosition)},
+    {label:'Outstanding Receivables', value:fmt(outstanding), cls: outstanding>5000?'alert':''},
+    {label:'Inventory Value', value:fmt(invValue)},
+    {label:'Low Stock Items', value:lowStock, cls: lowStock>0?'danger':''},
+    {label:'Expiring ≤ 7 Days', value:expiringSoon, cls: expiringSoon>0?'alert':''},
+    {label:'Production Volume', value:prodVolume+' units'},
+    {label:'Returns (period)', value:returnsCount},
+  ];
+
+  let html = `<div class="kpi-grid">` + kpis.map(k=>`
+    <div class="kpi-card ${k.cls||''}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+    </div>`).join('') + `</div>`;
+
+  html += `<div class="two-col">
+    <div class="panel">
+      <div class="panel-head"><h2>Revenue by Shop</h2></div>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chartShopRevenue"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Expiry Watch</h2><div class="sub">Active batches</div></div>
+      <div class="panel-body" id="expiryWatch"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Low Stock Alerts</h2></div>
+    <div class="panel-body" id="lowStockList"></div>
+  </div>`;
+
+  document.getElementById('content').innerHTML = html;
+
+  // expiry watch list
+  const sortedBatches = [...batches].sort((a,b)=>new Date(a.expiry_date)-new Date(b.expiry_date));
+  document.getElementById('expiryWatch').innerHTML = sortedBatches.length ? sortedBatches.map(b=>{
+    const days = Math.ceil((new Date(b.expiry_date)-new Date())/86400000);
+    const product = DATA.api.getProducts().find(p=>p.id===b.product_id);
+    let risk = days<=3?'bad':days<=7?'warn':'good';
+    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
+      <span>${product.name} <span class="muted">· ${b.batch_number}</span></span>
+      <span class="pill ${risk}">${days} day${days===1?'':'s'}</span>
+    </div>`;
+  }).join('') : `<div class="empty-state">No active batches.</div>`;
+
+  // low stock
+  const low = ing.filter(i=>i.current_stock < i.min_stock);
+  document.getElementById('lowStockList').innerHTML = low.length ? `
+    <table><thead><tr><th>Ingredient</th><th class="num">Current</th><th class="num">Minimum</th><th>Supplier</th><th>Status</th></tr></thead>
+    <tbody>${low.map(i=>`<tr><td>${i.name}</td><td class="num">${i.current_stock} ${i.unit}</td><td class="num">${i.min_stock} ${i.unit}</td><td>${i.supplier}</td><td><span class="pill bad">Reorder</span></td></tr>`).join('')}</tbody></table>
+  ` : `<div class="empty-state">All ingredients above minimum stock.</div>`;
+
+  // chart
+  const revByShop = {};
+  dist.forEach(d=>{ revByShop[d.shop_id] = (revByShop[d.shop_id]||0) + d.total_value; });
+  const labels = Object.keys(revByShop).map(id=>shops.find(s=>s.id===id).name);
+  const data = Object.values(revByShop);
+  new Chart(document.getElementById('chartShopRevenue'), {
+    type:'bar',
+    data:{labels, datasets:[{label:'Revenue', data, backgroundColor:'#d68a3c', borderRadius:3}]},
+    options:{plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9a9da5',font:{size:10}},grid:{color:'#2e323a'}}, y:{ticks:{color:'#9a9da5',font:{size:10}},grid:{color:'#2e323a'}}}}
+  });
+}
+
+/* ---------------- PRODUCTS ---------------- */
+function renderProducts(){
+  const products = DATA.api.getProducts();
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <input type="text" placeholder="Search products..." oninput="filterTable(this.value,'productsTable')">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openProductModal()">+ Add Product</button>
+    </div>
+    <div class="panel">
+      <table id="productsTable">
+        <thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Weight</th><th class="num">Shelf Life</th><th class="num">Wholesale Price</th><th>Status</th></tr></thead>
+        <tbody>${products.map(p=>`
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td class="muted">${p.sku}</td>
+            <td>${p.category}</td>
+            <td>${p.weight}</td>
+            <td class="num">${p.shelf_life_days}d</td>
+            <td class="num">${fmt(p.wholesale_price)}</td>
+            <td><span class="pill ${p.status==='active'?'good':'neutral'}">${p.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openProductModal(){
+  showModal('Add Product', `
+    <div class="form-row"><label>Product Name</label><input id="f_name" placeholder="e.g. Curd"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>SKU</label><input id="f_sku" placeholder="CRD-200"></div>
+      <div class="form-row"><label>Category</label><input id="f_category" placeholder="e.g. Dairy"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Weight</label><input id="f_weight" placeholder="200g"></div>
+      <div class="form-row"><label>Shelf Life (days)</label><input id="f_shelf" type="number"></div>
+    </div>
+    <div class="form-row"><label>Wholesale Price (Rs.)</label><input id="f_price" type="number"></div>
+  `, () => {
+    DATA.api.createProduct({
+      name: val('f_name'), sku: val('f_sku'), category: val('f_category'),
+      weight: val('f_weight'), shelf_life_days: Number(val('f_shelf')),
+      wholesale_price: Number(val('f_price')), status:'active'
+    });
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- INGREDIENTS ---------------- */
+function renderIngredients(){
+  const ing = DATA.api.getIngredients();
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <input type="text" placeholder="Search ingredients..." oninput="filterTable(this.value,'ingTable')">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openIngredientModal()">+ Add Ingredient</button>
+    </div>
+    <div class="panel">
+      <table id="ingTable">
+        <thead><tr><th>Ingredient</th><th class="num">Current Stock</th><th class="num">Min Stock</th><th class="num">Avg Cost</th><th>Supplier</th><th>Status</th></tr></thead>
+        <tbody>${ing.map(i=>{
+          const low = i.current_stock < i.min_stock;
+          return `<tr>
+            <td><strong>${i.name}</strong></td>
+            <td class="num">${i.current_stock.toLocaleString()} ${i.unit}</td>
+            <td class="num">${i.min_stock.toLocaleString()} ${i.unit}</td>
+            <td class="num">${fmt(i.avg_cost)}</td>
+            <td>${i.supplier}</td>
+            <td><span class="pill ${low?'bad':'good'}">${low?'Reorder':'OK'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function openIngredientModal(){
+  showModal('Add Ingredient', `
+    <div class="form-row"><label>Ingredient Name</label><input id="f_name" placeholder="e.g. Coconut Milk"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Unit Type</label><select id="f_unit"><option>kg</option><option>g</option><option>ml</option><option>pcs</option><option>cylinders</option></select></div>
+      <div class="form-row"><label>Minimum Stock</label><input id="f_min" type="number"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Average Cost (Rs.)</label><input id="f_cost" type="number"></div>
+      <div class="form-row"><label>Supplier</label><input id="f_supplier"></div>
+    </div>
+  `, () => {
+    DATA.api.createIngredient({name:val('f_name'), unit:val('f_unit'), min_stock:Number(val('f_min')), avg_cost:Number(val('f_cost')), supplier:val('f_supplier')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- RECIPES ---------------- */
+function renderRecipes(){
+  const products = DATA.api.getProducts();
+  const html = products.map(p=>{
+    const recipe = DATA.api.getRecipes(p.id);
+    return `<div class="panel">
+      <div class="panel-head"><h2>${p.name}</h2><div class="sub">Per 100-unit batch · SKU ${p.sku}</div></div>
+      <div class="panel-body">
+        <table>
+          <thead><tr><th>Ingredient</th><th class="num">Qty per Batch</th><th>Unit</th></tr></thead>
+          <tbody>${recipe.map(r=>{
+            const ing = DB.ingredients.find(i=>i.id===r.ingredient_id);
+            return `<tr><td>${ing.name}</td><td class="num">${r.qty_per_batch}</td><td>${r.unit}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('content').innerHTML = html + `<p class="muted" style="font-size:11.5px;">Recipes automatically drive ingredient deduction when a production batch is logged.</p>`;
+}
+
+/* ---------------- INVENTORY LEDGER ---------------- */
+function renderInventory(){
+  const txns = [...DATA.api.getTransactions()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <select onchange="filterByType(this.value)" id="typeFilter">
+        <option value="">All Types</option>
+        <option value="purchase">Purchases</option>
+        <option value="consumption">Consumption</option>
+        <option value="waste">Waste</option>
+        <option value="adjustment_in">Adjustment (In)</option>
+        <option value="adjustment_out">Adjustment (Out)</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn" onclick="openTxnModal()">+ Log Purchase / Adjustment</button>
+    </div>
+    <div class="panel">
+      <table id="txnTable">
+        <thead><tr><th>Date</th><th>Type</th><th>Ingredient</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Total</th><th>Reference</th></tr></thead>
+        <tbody>${txns.map(rowTxn).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function rowTxn(t){
+  const ing = DB.ingredients.find(i=>i.id===t.ingredient_id);
+  const sign = (t.type==='purchase'||t.type==='adjustment_in') ? '+' : '−';
+  const pillClass = t.type==='purchase'?'good':t.type==='waste'?'bad':t.type==='consumption'?'neutral':'warn';
+  return `<tr data-type="${t.type}">
+    <td>${fmtDate(t.date)}</td>
+    <td><span class="pill ${pillClass}">${t.type.replace('_',' ')}</span></td>
+    <td>${ing?ing.name:'—'}</td>
+    <td class="num">${sign}${t.qty}</td>
+    <td class="num">${fmt(t.unit_cost)}</td>
+    <td class="num">${fmt(t.qty*t.unit_cost)}</td>
+    <td class="muted">${t.ref || t.notes || '—'}</td>
+  </tr>`;
+}
+function filterByType(type){
+  document.querySelectorAll('#txnTable tbody tr').forEach(tr=>{
+    tr.style.display = (!type || tr.dataset.type===type) ? '' : 'none';
+  });
+}
+function openTxnModal(){
+  const opts = DB.ingredients.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+  showModal('Log Purchase / Adjustment', `
+    <div class="form-row"><label>Type</label>
+      <select id="f_type"><option value="purchase">Purchase</option><option value="adjustment_in">Adjustment (In)</option><option value="adjustment_out">Adjustment (Out)</option><option value="waste">Waste</option></select>
+    </div>
+    <div class="form-row"><label>Ingredient</label><select id="f_ing">${opts}</select></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Quantity</label><input id="f_qty" type="number"></div>
+      <div class="form-row"><label>Unit Cost (Rs.)</label><input id="f_cost" type="number"></div>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="f_notes" placeholder="optional"></div>
+  `, () => {
+    DB.inventory_transactions.push({id:uid('TX'), date:todayISO(), type:val('f_type'), ingredient_id:val('f_ing'), qty:Number(val('f_qty')), unit_cost:Number(val('f_cost')), notes:val('f_notes')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- PRODUCTION ---------------- */
+function renderProduction(){
+  const batches = [...DATA.api.getBatches()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <input type="text" placeholder="Search batches..." oninput="filterTable(this.value,'batchTable')">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openBatchModal()">+ New Production Batch</button>
+    </div>
+    <div class="panel">
+      <table id="batchTable">
+        <thead><tr><th>Batch #</th><th>Date</th><th>Product</th><th class="num">Qty</th><th class="num">Total Cost</th><th class="num">Unit Cost</th><th>Expiry</th><th>Flags</th></tr></thead>
+        <tbody>${batches.map(b=>{
+          const p = DATA.api.getProducts().find(p=>p.id===b.product_id);
+          return `<tr>
+            <td><strong>${b.batch_number}</strong></td>
+            <td>${fmtDate(b.date)}</td>
+            <td>${p.name}</td>
+            <td class="num">${b.qty_produced}</td>
+            <td class="num">${fmt(b.total_cost||0)}</td>
+            <td class="num">${fmt(b.unit_cost||0)}</td>
+            <td>${fmtDate(b.expiry_date)}</td>
+            <td>${b.stock_override?'<span class="pill warn">Override used</span>':'<span class="pill good">Clean</span>'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function openBatchModal(){
+  const opts = DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  showModal('New Production Batch', `
+    <div id="batchWarnArea"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Batch Number</label><input id="f_batchno" placeholder="e.g. WTP-0092"></div>
+      <div class="form-row"><label>Date</label><input id="f_date" type="date" value="${todayISO()}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Product</label><select id="f_product">${opts}</select></div>
+      <div class="form-row"><label>Qty Produced</label><input id="f_qty" type="number" value="100"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Packaging Cost</label><input id="f_pack" type="number" value="0"></div>
+      <div class="form-row"><label>Gas Cost</label><input id="f_gas" type="number" value="0"></div>
+    </div>
+    <div class="form-row"><label>Labor Cost</label><input id="f_labor" type="number" value="0"></div>
+    <div class="form-row"><label>Notes</label><input id="f_notes" placeholder="optional"></div>
+  `, () => attemptBatchSave(false));
+}
+
+function attemptBatchSave(override){
+  const batch = {
+    batch_number: val('f_batchno'), date: val('f_date'), product_id: val('f_product'),
+    qty_produced: Number(val('f_qty')), packaging_cost: Number(val('f_pack')),
+    gas_cost: Number(val('f_gas')), labor_cost: Number(val('f_labor')), notes: val('f_notes'),
+    override
+  };
+  const result = DATA.api.createProductionBatch(batch);
+  if(!result.ok){
+    const lines = result.shortfalls.map(s=>{
+      const ing = DB.ingredients.find(i=>i.id===s.ingredient_id);
+      return `${ing.name}: need ${s.need.toFixed(1)} ${ing.unit}, have ${s.have.toFixed(1)} ${ing.unit}`;
+    }).join('<br>');
+    document.getElementById('batchWarnArea').innerHTML = `
+      <div class="warn-banner">
+        <strong>Insufficient stock for this batch:</strong><br>${lines}
+        <br><br><button class="btn small" onclick="attemptBatchSave(true)">Save Anyway (Override)</button>
+      </div>`;
+    return;
+  }
+  closeModal(); renderView();
+}
+
+/* ---------------- DISTRIBUTION ---------------- */
+function renderDistribution(){
+  const dist = [...DATA.api.getDistribution()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <input type="text" placeholder="Search..." oninput="filterTable(this.value,'distTable')">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openDistModal()">+ Log Distribution</button>
+    </div>
+    <div class="panel">
+      <table id="distTable">
+        <thead><tr><th>Date</th><th>Shop</th><th>Product</th><th class="num">Qty</th><th>Type</th><th class="num">Value</th></tr></thead>
+        <tbody>${dist.map(d=>{
+          const shop = DB.shops.find(s=>s.id===d.shop_id);
+          const product = DB.products.find(p=>p.id===d.product_id);
+          return `<tr>
+            <td>${fmtDate(d.date)}</td><td>${shop.name}</td><td>${product.name}</td>
+            <td class="num">${d.qty}</td>
+            <td><span class="pill ${d.type==='consignment'?'warn':'good'}">${d.type.replace('_',' ')}</span></td>
+            <td class="num">${fmt(d.total_value)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function openDistModal(){
+  const shopOpts = DB.shops.filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const prodOpts = DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const batchOpts = DB.production_batches.map(b=>`<option value="${b.id}">${b.batch_number}</option>`).join('');
+  showModal('Log Distribution', `
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="form-row"><label>Shop</label><select id="f_shop">${shopOpts}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Product</label><select id="f_product">${prodOpts}</select></div>
+      <div class="form-row"><label>Batch</label><select id="f_batch">${batchOpts}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Quantity</label><input id="f_qty" type="number"></div>
+      <div class="form-row"><label>Type</label><select id="f_type"><option value="consignment">Consignment</option><option value="direct_sale">Direct Sale</option></select></div>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="f_notes" placeholder="optional"></div>
+  `, () => {
+    DATA.api.createDistribution({date:val('f_date'), shop_id:val('f_shop'), product_id:val('f_product'), batch_id:val('f_batch'), qty:Number(val('f_qty')), type:val('f_type'), notes:val('f_notes')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- SHOPS ---------------- */
+function renderShops(){
+  const shops = DATA.api.getShops();
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <input type="text" placeholder="Search shops..." oninput="filterTable(this.value,'shopTable')">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openShopModal()">+ Add Shop</button>
+    </div>
+    <div class="panel">
+      <table id="shopTable">
+        <thead><tr><th>Shop</th><th>Owner</th><th>Phone</th><th>District</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
+        <tbody>${shops.map(s=>{
+          const bal = shopBalance(s.id);
+          return `<tr>
+            <td><strong>${s.name}</strong><div class="muted" style="font-size:11px;">${s.address}</div></td>
+            <td>${s.owner}</td><td>${s.phone}</td><td>${s.district}</td>
+            <td class="num">${fmt(bal)}</td>
+            <td><span class="pill ${s.status==='active'?'good':'neutral'}">${s.status}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function openShopModal(){
+  showModal('Add Shop', `
+    <div class="form-row"><label>Shop Name</label><input id="f_name"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Owner</label><input id="f_owner"></div>
+      <div class="form-row"><label>Phone</label><input id="f_phone"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>District</label><input id="f_district"></div>
+      <div class="form-row"><label>Status</label><select id="f_status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="form-row"><label>Address</label><input id="f_address"></div>
+  `, () => {
+    DATA.api.createShop({name:val('f_name'), owner:val('f_owner'), phone:val('f_phone'), district:val('f_district'), address:val('f_address'), status:val('f_status')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- CONSIGNMENT ---------------- */
+function renderConsignment(){
+  const cons = DATA.api.getConsignment();
+  document.getElementById('content').innerHTML = `
+    <div class="panel">
+      <table>
+        <thead><tr><th>Shop</th><th>Product</th><th class="num">Delivered</th><th class="num">Sold</th><th class="num">Returned</th><th class="num">Expired</th><th class="num">Outstanding Stock</th><th></th></tr></thead>
+        <tbody>${cons.map(c=>{
+          const shop = DB.shops.find(s=>s.id===c.shop_id);
+          const product = DB.products.find(p=>p.id===c.product_id);
+          const outstandingStock = c.delivered_qty - c.sold_qty - c.returned_qty - c.expired_qty;
+          return `<tr>
+            <td>${shop.name}</td><td>${product.name}</td>
+            <td class="num">${c.delivered_qty}</td>
+            <td class="num">${c.sold_qty}</td>
+            <td class="num">${c.returned_qty}</td>
+            <td class="num">${c.expired_qty}</td>
+            <td class="num">${outstandingStock}</td>
+            <td><button class="btn small secondary" onclick="openConsUpdateModal('${c.id}')">Update</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function openConsUpdateModal(id){
+  const c = DB.consignment_tracking.find(x=>x.id===id);
+  showModal('Update Consignment Counts', `
+    <div class="form-grid">
+      <div class="form-row"><label>Sold Qty</label><input id="f_sold" type="number" value="${c.sold_qty}"></div>
+      <div class="form-row"><label>Returned Qty</label><input id="f_returned" type="number" value="${c.returned_qty}"></div>
+    </div>
+    <div class="form-row"><label>Expired Qty</label><input id="f_expired" type="number" value="${c.expired_qty}"></div>
+  `, () => {
+    DATA.api.updateConsignment(id, {sold_qty:Number(val('f_sold')), returned_qty:Number(val('f_returned')), expired_qty:Number(val('f_expired'))});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- PAYMENTS ---------------- */
+function renderPayments(){
+  const payments = [...DATA.api.getPayments()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const shops = DATA.api.getShops();
+  document.getElementById('content').innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h2>Outstanding Balance by Shop</h2><div class="sub">Running balance: delivered value − returns − payments</div></div>
+      <div class="panel-body" style="padding:0;">
+        <table>
+          <thead><tr><th>Shop</th><th class="num">Outstanding</th></tr></thead>
+          <tbody>${shops.map(s=>`<tr><td>${s.name}</td><td class="num">${fmt(shopBalance(s.id))}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openPaymentModal()">+ Log Payment</button>
+    </div>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Date</th><th>Shop</th><th>Type</th><th class="num">Amount</th><th>Method</th><th>Reference</th></tr></thead>
+        <tbody>${payments.map(p=>{
+          const shop = shops.find(s=>s.id===p.shop_id);
+          return `<tr><td>${fmtDate(p.date)}</td><td>${shop.name}</td><td><span class="pill neutral">${p.type}</span></td><td class="num">${fmt(p.amount)}</td><td>${p.method}</td><td class="muted">${p.reference||'—'}</td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function openPaymentModal(){
+  const shopOpts = DB.shops.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  showModal('Log Payment', `
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="form-row"><label>Shop</label><select id="f_shop">${shopOpts}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Type</label><select id="f_type"><option value="collection">Collection</option><option value="settlement">Settlement</option><option value="advance">Advance</option></select></div>
+      <div class="form-row"><label>Amount (Rs.)</label><input id="f_amount" type="number"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Method</label><select id="f_method"><option value="cash">Cash</option><option value="bank transfer">Bank Transfer</option><option value="cheque">Cheque</option></select></div>
+      <div class="form-row"><label>Reference</label><input id="f_ref" placeholder="optional"></div>
+    </div>
+  `, () => {
+    DATA.api.createPayment({date:val('f_date'), shop_id:val('f_shop'), type:val('f_type'), amount:Number(val('f_amount')), method:val('f_method'), reference:val('f_ref')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- EXPENSES ---------------- */
+function renderExpenses(){
+  const expenses = [...DATA.api.getExpenses()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openExpenseModal()">+ Log Expense</button>
+    </div>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th><th>Paid By</th></tr></thead>
+        <tbody>${expenses.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="pill neutral">${e.category}</span></td><td>${e.description}</td><td class="num">${fmt(e.amount)}</td><td class="muted">${e.paid_by}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+function openExpenseModal(){
+  showModal('Log Expense', `
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="form-row"><label>Category</label><select id="f_cat"><option>Gas</option><option>Fuel</option><option>Packaging</option><option>Transport</option><option>Marketing</option><option>Equipment</option><option>Other</option></select></div>
+    </div>
+    <div class="form-row"><label>Description</label><input id="f_desc"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Amount (Rs.)</label><input id="f_amount" type="number"></div>
+      <div class="form-row"><label>Paid By</label><input id="f_paidby" placeholder="e.g. owner"></div>
+    </div>
+  `, () => {
+    DATA.api.createExpense({date:val('f_date'), category:val('f_cat'), description:val('f_desc'), amount:Number(val('f_amount')), paid_by:val('f_paidby')});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- RETURNS ---------------- */
+function renderReturns(){
+  const returns = DATA.api.getReturns();
+  document.getElementById('content').innerHTML = `
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn" onclick="openReturnModal()">+ Log Return</button>
+    </div>
+    <div class="panel">
+      ${returns.length ? `<table>
+        <thead><tr><th>Date</th><th>Shop</th><th>Product</th><th class="num">Qty</th><th>Reason</th><th class="num">Cost Impact</th></tr></thead>
+        <tbody>${returns.map(r=>{
+          const shop = DB.shops.find(s=>s.id===r.shop_id);
+          const product = DB.products.find(p=>p.id===r.product_id);
+          return `<tr><td>${fmtDate(r.date)}</td><td>${shop.name}</td><td>${product.name}</td><td class="num">${r.qty}</td><td><span class="pill bad">${r.reason_code}</span></td><td class="num">${fmt(r.cost_impact)}</td></tr>`;
+        }).join('')}</tbody></table>` : `<div class="empty-state">No returns logged yet.</div>`}
+    </div>`;
+}
+function openReturnModal(){
+  const shopOpts = DB.shops.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const prodOpts = DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  showModal('Log Return', `
+    <div class="form-grid">
+      <div class="form-row"><label>Date</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="form-row"><label>Shop</label><select id="f_shop">${shopOpts}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Product</label><select id="f_product">${prodOpts}</select></div>
+      <div class="form-row"><label>Quantity</label><input id="f_qty" type="number"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Reason</label><select id="f_reason"><option value="expired">Expired</option><option value="damaged">Damaged</option><option value="customer_return">Customer Return</option></select></div>
+      <div class="form-row"><label>Cost Impact (Rs.)</label><input id="f_cost" type="number"></div>
+    </div>
+  `, () => {
+    DATA.api.createReturn({date:val('f_date'), shop_id:val('f_shop'), product_id:val('f_product'), qty:Number(val('f_qty')), reason_code:val('f_reason'), cost_impact:Number(val('f_cost'))});
+    closeModal(); renderView();
+  });
+}
+
+/* ---------------- REPORTS ---------------- */
+function renderReports(){
+  document.getElementById('content').innerHTML = `
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h2>Cash Flow</h2><div class="sub">Payments in vs Expenses out</div></div>
+        <div class="panel-body"><div class="chart-wrap"><canvas id="chartCashFlow"></canvas></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Product Performance</h2><div class="sub">Units distributed by product</div></div>
+        <div class="panel-body"><div class="chart-wrap"><canvas id="chartProductPerf"></canvas></div></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h2>Retail Performance</h2><div class="sub">Revenue by shop, ranked</div></div>
+        <div class="panel-body" id="retailPerf"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Outstanding Payments (Aging)</h2></div>
+        <div class="panel-body" id="agingTable"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Expiry Forecast</h2></div>
+      <div class="panel-body" id="expiryForecast"></div>
+    </div>`;
+
+  // cash flow chart
+  const pays = DATA.api.getPayments().reduce((s,p)=>s+Number(p.amount),0);
+  const exps = DATA.api.getExpenses().reduce((s,e)=>s+Number(e.amount),0);
+  new Chart(document.getElementById('chartCashFlow'), {
+    type:'bar',
+    data:{labels:['Inflow (Payments)','Outflow (Expenses)'], datasets:[{data:[pays,exps], backgroundColor:['#5a9c6e','#c4593f'], borderRadius:3}]},
+    options:{plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9a9da5'},grid:{display:false}}, y:{ticks:{color:'#9a9da5'},grid:{color:'#2e323a'}}}}
+  });
+
+  // product performance
+  const dist = DATA.api.getDistribution();
+  const byProduct = {};
+  dist.forEach(d=>{ byProduct[d.product_id] = (byProduct[d.product_id]||0)+d.qty; });
+  const products = DATA.api.getProducts();
+  new Chart(document.getElementById('chartProductPerf'), {
+    type:'doughnut',
+    data:{labels:Object.keys(byProduct).map(id=>products.find(p=>p.id===id).name), datasets:[{data:Object.values(byProduct), backgroundColor:['#d68a3c','#8a5a28','#5a9c6e','#3a6e8a']}]},
+    options:{plugins:{legend:{labels:{color:'#e7e6e2',font:{size:11}}}}}
+  });
+
+  // retail performance ranked
+  const shops = DATA.api.getShops();
+  const revByShop = shops.map(s=>({
+    name:s.name,
+    rev: dist.filter(d=>d.shop_id===s.id).reduce((sum,d)=>sum+d.total_value,0)
+  })).sort((a,b)=>b.rev-a.rev);
+  document.getElementById('retailPerf').innerHTML = `<table><thead><tr><th>Rank</th><th>Shop</th><th class="num">Revenue</th></tr></thead>
+    <tbody>${revByShop.map((r,i)=>`<tr><td class="muted">#${i+1}</td><td>${r.name}</td><td class="num">${fmt(r.rev)}</td></tr>`).join('')}</tbody></table>`;
+
+  // aging
+  document.getElementById('agingTable').innerHTML = `<table><thead><tr><th>Shop</th><th class="num">Balance</th><th>Status</th></tr></thead>
+    <tbody>${shops.map(s=>{
+      const bal = shopBalance(s.id);
+      return `<tr><td>${s.name}</td><td class="num">${fmt(bal)}</td><td><span class="pill ${bal>3000?'bad':bal>0?'warn':'good'}">${bal>0?'Outstanding':'Settled'}</span></td></tr>`;
+    }).join('')}</tbody></table>`;
+
+  // expiry forecast
+  const batches = DATA.api.getBatches();
+  document.getElementById('expiryForecast').innerHTML = `<table>
+    <thead><tr><th>Batch</th><th>Product</th><th>Expiry Date</th><th class="num">Days Left</th><th>Risk</th></tr></thead>
+    <tbody>${batches.map(b=>{
+      const product = products.find(p=>p.id===b.product_id);
+      const days = Math.ceil((new Date(b.expiry_date)-new Date())/86400000);
+      const risk = days<=3?'bad':days<=7?'warn':days<=14?'neutral':'good';
+      const label = days<=3?'High':days<=7?'Medium':days<=14?'Watch':'Low';
+      return `<tr><td>${b.batch_number}</td><td>${product.name}</td><td>${fmtDate(b.expiry_date)}</td><td class="num">${days}</td><td><span class="pill ${risk}">${label}</span></td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+/* ---------------- SETTINGS ---------------- */
+function renderSettings(){
+  document.getElementById('content').innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h2>Backup &amp; Migration</h2><div class="sub">Your data is stored only in this browser. Export regularly.</div></div>
+      <div class="panel-body">
+        <p class="muted" style="font-size:12px;margin-bottom:12px;">
+          Data is currently saved to this browser's local storage only — it does not sync between devices and can be lost if you clear browser data.
+          Export a backup file regularly, and use Import to restore it here or load it into a future version of this system.
+        </p>
+        <button class="btn" onclick="exportData()">⬇ Export All Data (.json)</button>
+        <button class="btn secondary" onclick="document.getElementById('importFile').click()">⬆ Import Data (.json)</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <div style="margin-top:14px;">
+          <button class="btn danger small" onclick="clearAllData()">Clear All Data</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>System Settings</h2><div class="sub">Thresholds and defaults</div></div>
+      <div class="panel-body">
+        <div class="form-row"><label>Low Stock Alert Threshold</label><input value="Uses per-ingredient minimum stock" disabled></div>
+        <div class="form-row"><label>Expiry Alert Windows</label><input value="3 days / 7 days / 14 days" disabled></div>
+        <div class="form-row"><label>Default Labor Rate</label><input value="Set per production batch" disabled></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Users &amp; Roles</h2></div>
+      <div class="panel-body">
+        <table>
+          <thead><tr><th>Role</th><th>Module Access</th></tr></thead>
+          <tbody>${Object.entries(ROLES).map(([k,r])=>`<tr><td><strong>${r.label}</strong></td><td class="muted">${r.modules.join(', ')}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <p class="muted" style="font-size:11.5px;">Backend: browser-only (local storage). To move to Google Sheets, the DATA.api layer in this file is the single swap point — see code comments.</p>`;
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `malan-makanan-backup-${todayISO()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const parsed = JSON.parse(e.target.result);
+      const requiredKeys = ['products','ingredients','inventory_transactions','recipes','production_batches','shops','distribution','consignment_tracking','payments','expenses','returns'];
+      const hasAllKeys = requiredKeys.every(k => Array.isArray(parsed[k]));
+      if(!hasAllKeys){ alert('This file does not match the expected backup format.'); return; }
+      DB = parsed;
+      saveToStorage();
+      renderView();
+      alert('Data imported successfully.');
+    }catch(err){
+      alert('Could not read this file. Make sure it is a valid backup .json file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearAllData(){
+  if(!confirm('This will permanently erase all data in this browser. Export a backup first if you need one. Continue?')) return;
+  DB = {products:[], ingredients:[], inventory_transactions:[], recipes:[], production_batches:[], shops:[], distribution:[], consignment_tracking:[], payments:[], expenses:[], returns:[]};
+  saveToStorage();
+  renderView();
+}
+
+/* ---------------- MODAL HELPERS ---------------- */
+function showModal(title, bodyHtml, onSave){
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>${title}</h3><span class="modal-close" onclick="closeModal()">✕</span></div>
+    <div class="modal-body">${bodyHtml}</div>
+    <div class="modal-foot">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="modalSaveBtn">Save</button>
+    </div>`;
+  document.getElementById('modalSaveBtn').onclick = onSave;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+function val(id){ return document.getElementById(id).value; }
+function filterTable(query, tableId){
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+/* ---------------- INIT ---------------- */
+renderNav();
+renderView();
+</script>
+</body>
+</html>
